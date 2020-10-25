@@ -43,11 +43,11 @@
         }
 
         // 管道直径
-        const diameter = 30;
+        const diameter = 14;
 
         const totalOrientation = getOrientation(posStart, posEnd);
 
-        if (totalOrientation === ORIENTATION_RIGHT) {
+        function createPipeLineItem(posStart) {
             // top line
             var lineOpt1 = {
                 position: posStart,
@@ -87,7 +87,7 @@
                     y1: 0,
                     width: 0,
                     height: diameter - 4,
-                    r: [3,3,3,3]
+                    r: [3, 3, 3, 3]
                 },
                 percent: 1,
                 style: {
@@ -103,7 +103,7 @@
                     y: 0,
                     width: (diameter - 4) / 0.618,
                     height: diameter - 4,
-                    r: [3,3,3,3]
+                    r: [3, 3, 3, 3]
                 },
                 percent: 1,
                 style: {
@@ -129,12 +129,12 @@
             var rect2Animator = rect2.animate('', true);
             // console.log((diameter - 4) / 0.618 * 2 + (diameter - 4));
             rect1Animator
-                .when(3000, {
+                .when(600, {
                     _t: 1
                 })
                 .during(function (p, _t) {
                     // var dt = _t - t0;
-                    var dt = ((diameter - 4) / 0.618  + (diameter - 4)) * 2 * _t
+                    var dt = ((diameter - 4) / 0.618 + (diameter - 4)) * 2 * _t
                     if (dt < (diameter - 4) / 0.618 - 5) {
                         // 变宽
                         p.setStyle({
@@ -142,7 +142,7 @@
                         });
                         p.setShape({
                             width: dt,
-                            r: [0,3,3,0],
+                            r: [0, 3, 3, 0],
                         });
                         p.position = [posStart[0], posStart[1] - diameter / 2 + 2];
                     } else if (dt >= (diameter - 4) / 0.618 - 5
@@ -150,22 +150,22 @@
                         // 变宽 加角
                         p.setShape({
                             width: dt,
-                            r: [3,3,3,3],
+                            r: [3, 3, 3, 3],
                         });
                     } else if (dt >= (diameter - 4) / 0.618
                         && dt < (diameter - 4) / 0.618 + (diameter - 4)) {
                         // 平移
                         p.position = [posStart[0] + dt - (diameter - 4) / 0.618, posStart[1] - diameter / 2 + 2];
                     } else if (dt > (diameter - 4) / 0.618 + (diameter - 4)
-                    && dt < (diameter - 4) / 0.618 * 2 + (diameter - 4)) {
+                        && dt < (diameter - 4) / 0.618 * 2 + (diameter - 4)) {
                         // 变窄
                         p.position = [posStart[0] + dt - (diameter - 4) / 0.618, posStart[1] - diameter / 2 + 2];
                         p.setShape({
                             width: (diameter - 4) / 0.618 * 2 + (diameter - 4) - dt,
-                            r: [3,0,0,3],
+                            r: [3, 0, 0, 3],
                         });
                     } else if (dt > (diameter - 4) / 0.618 * 2 + (diameter - 4)
-                        && dt < ((diameter - 4) / 0.618  + (diameter - 4)) * 2) {
+                        && dt < ((diameter - 4) / 0.618 + (diameter - 4)) * 2) {
                         // 消失
                         p.position = [posStart[0] + dt - (diameter - 4) / 0.618, posStart[1] - diameter / 2 + 2];
                         p.setShape({
@@ -184,7 +184,7 @@
                 .start();
 
             rect2Animator
-                .when(3000, {
+                .when(600, {
                     _t: 1
                 })
                 .during(function (p, _t) {
@@ -192,10 +192,10 @@
                     var dt = ((diameter - 4) / 0.618 + (diameter - 4)) * 2 * _t;
                     if (dt < (diameter - 4) / 0.618) {
                         // 变窄
-                        p.position = [posStart[0] + (diameter - 4)  + dt, posStart[1] - diameter / 2 + 2];
+                        p.position = [posStart[0] + (diameter - 4) + dt, posStart[1] - diameter / 2 + 2];
                         p.setShape({
                             width: (diameter - 4) / 0.618 - dt,
-                            r: [3,0,0,3],
+                            r: [3, 0, 0, 3],
                         });
                     } else if (dt >= (diameter - 4) / 0.618
                         && dt < (diameter - 4) / 0.618 + (diameter - 4)) {
@@ -204,7 +204,7 @@
                             opacity: 0,
                         });
                     } else if (dt > (diameter - 4) / 0.618 + (diameter - 4)
-                    && dt <= (diameter - 4) / 0.618 * 2 + (diameter - 4)) {
+                        && dt <= (diameter - 4) / 0.618 * 2 + (diameter - 4)) {
                         // 变宽
                         p.setStyle({
                             opacity: 1,
@@ -212,12 +212,12 @@
                         p.position = [posStart[0], posStart[1] - diameter / 2 + 2];
                         p.setShape({
                             width: dt - (diameter - 4) / 0.618 - (diameter - 4),
-                            r: [0,3,3,0],
+                            r: [0, 3, 3, 0],
                         });
                     } else if (dt > (diameter - 4) / 0.618 * 2 + (diameter - 4)
                         && dt <= ((diameter - 4) / 0.618 + (diameter - 4)) * 2) {
                         p.setShape({
-                            r: [3,3,3,3],
+                            r: [3, 3, 3, 3],
                         });
                         // 平移
                         p.position = [posStart[0] + dt - (diameter - 4) / 0.618 * 2 - (diameter - 4), posStart[1] - diameter / 2 + 2];
@@ -229,8 +229,15 @@
                     // zr.remove(particle);
                 })
                 .start();
+        }
 
+        if (totalOrientation === ORIENTATION_RIGHT) {
+            /*createPipeLineItem([posStart[0]  + (diameter - 4) / 0.618 + (diameter - 4), posStart[1]]);
+            createPipeLineItem([posStart[0]  + ((diameter - 4) / 0.618 + (diameter - 4)) * 2, posStart[1]]);*/
 
+            for (let i = 0; posStart[0] + ((diameter - 4) / 0.618 + (diameter - 4)) * i < posEnd[0]; i++) {
+                createPipeLineItem([posStart[0]  + ((diameter - 4) / 0.618 + (diameter - 4)) * i, posStart[1]]);
+            }
         }
     }
 
