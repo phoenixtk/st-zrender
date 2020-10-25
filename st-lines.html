@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8" />
+    <meta charset="utf-8"/>
     <title>Animation</title>
     <script src="js/zrender.min.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <style>
         html, body, #main {
             width: 100%;
@@ -19,46 +19,223 @@
     // 初始化zrender
     var zr = zrender.init(main);
 
-    var gradient = new zrender.LinearGradient();
-    gradient.addColorStop(0, 'red');
-    gradient.addColorStop(1, 'black');
+    const ORIENTATION_RIGHT = Symbol("orientationRight");
+    const ORIENTATION_LEFT = Symbol("orientationLeft");
+    const ORIENTATION_UP = Symbol("orientationUp");
+    const ORIENTATION_DOWN = Symbol("orientationDown");
 
-    var circle = new zrender.Circle({
-        position: [100, 100],
-        scale: [1, 1],
-        shape: {
-            cx: 50,
-            cy: 50,
-            r: 50
-        },
-        style: {
-            fill: gradient,
-            lineWidth: 5,
-            text:'circle',
-            textPosition:'inside'
+    function createPipeline(posStart, posEnd) {
+        if (!posStart instanceof Array || !posEnd instanceof Array) {
+            return false;
         }
-    });
-    zr.add(circle);
 
-    circle.animate('')
-        .when(200, {
-            position: [200, 0]
-        })
-        .start();
-    circle.animate('', true)
-        .when(1000, {
-            position: [200, 0]
-        })
-        .when(2000, {
-            position: [200, 200]
-        })
-        .when(3000, {
-            position: [0, 200]
-        })
-        .when(4000, {
-            position: [100, 100]
-        })
-        .start();
+        // judge total orientation
+        function getOrientation(posStart, posEnd) {
+            if (posStart[0] < posEnd[0] && posStart[1] === posEnd[1]) {
+                return ORIENTATION_RIGHT
+            } else if (posStart[0] > posEnd[0] && posStart[1] === posEnd[1]) {
+                return ORIENTATION_LEFT
+            } else if (posStart[0] === posEnd[0] && posStart[1] > posEnd[1]) {
+                return ORIENTATION_UP
+            } else if (posStart[0] === posEnd[0] && posStart[1] < posEnd[1]) {
+                return ORIENTATION_DOWN
+            }
+        }
+
+        // 管道直径
+        const diameter = 30;
+
+        const totalOrientation = getOrientation(posStart, posEnd);
+
+        if (totalOrientation === ORIENTATION_RIGHT) {
+            // top line
+            var lineOpt1 = {
+                position: posStart,
+                scale: [1, 1],
+                percent: 1,
+                shape: {
+                    x1: 0,
+                    y1: 0 - diameter / 2,
+                    x2: (diameter - 4) / 0.618 + (diameter - 4),
+                    y2: 0 - diameter / 2,
+                },
+                style: {
+                    fill: '#000'
+                }
+            };
+            // bottom line
+            var lineOpt2 = {
+                position: posStart,
+                scale: [1, 1],
+                shape: {
+                    x1: 0,
+                    y1: 0 + diameter / 2,
+                    x2: (diameter - 4) / 0.618 + (diameter - 4),
+                    y2: 0 + diameter / 2,
+                },
+                percent: 1,
+                style: {
+                    fill: '#000'
+                }
+            };
+
+            var rectOpt1 = {
+                position: [posStart[0], posStart[1] - diameter / 2 + 2],
+                scale: [1, 1],
+                shape: {
+                    x1: 0,
+                    y1: 0,
+                    width: 0,
+                    height: diameter - 4,
+                    r: [3,3,3,3]
+                },
+                percent: 1,
+                style: {
+                    fill: '#000'
+                }
+            };
+
+            var rectOpt2 = {
+                position: [posStart[0], posStart[1] - diameter / 2 + 2],
+                scale: [1, 1],
+                shape: {
+                    x: 0,
+                    y: 0,
+                    width: (diameter - 4) / 0.618,
+                    height: diameter - 4,
+                    r: [3,3,3,3]
+                },
+                percent: 1,
+                style: {
+                    fill: '#000'
+                }
+            };
+
+            var line1 = new zrender.Line(lineOpt1);
+            var line2 = new zrender.Line(lineOpt2);
+
+            var rect1 = new zrender.Rect(rectOpt1);
+            var rect2 = new zrender.Rect(rectOpt2);
+
+            zr.add(line1);
+            zr.add(line2);
+            zr.add(rect1);
+            zr.add(rect2);
+
+            // var t0 = 0;
+            rect1._t = 0;
+            rect2._t = 0;
+            var rect1Animator = rect1.animate('', true);
+            var rect2Animator = rect2.animate('', true);
+            // console.log((diameter - 4) / 0.618 * 2 + (diameter - 4));
+            rect1Animator
+                .when(3000, {
+                    _t: 1
+                })
+                .during(function (p, _t) {
+                    // var dt = _t - t0;
+                    var dt = ((diameter - 4) / 0.618  + (diameter - 4)) * 2 * _t
+                    if (dt < (diameter - 4) / 0.618 - 5) {
+                        // 变宽
+                        p.setStyle({
+                            opacity: 1,
+                        });
+                        p.setShape({
+                            width: dt,
+                            r: [0,3,3,0],
+                        });
+                        p.position = [posStart[0], posStart[1] - diameter / 2 + 2];
+                    } else if (dt >= (diameter - 4) / 0.618 - 5
+                        && dt < (diameter - 4) / 0.618) {
+                        // 变宽 加角
+                        p.setShape({
+                            width: dt,
+                            r: [3,3,3,3],
+                        });
+                    } else if (dt >= (diameter - 4) / 0.618
+                        && dt < (diameter - 4) / 0.618 + (diameter - 4)) {
+                        // 平移
+                        p.position = [posStart[0] + dt - (diameter - 4) / 0.618, posStart[1] - diameter / 2 + 2];
+                    } else if (dt > (diameter - 4) / 0.618 + (diameter - 4)
+                    && dt < (diameter - 4) / 0.618 * 2 + (diameter - 4)) {
+                        // 变窄
+                        p.position = [posStart[0] + dt - (diameter - 4) / 0.618, posStart[1] - diameter / 2 + 2];
+                        p.setShape({
+                            width: (diameter - 4) / 0.618 * 2 + (diameter - 4) - dt,
+                            r: [3,0,0,3],
+                        });
+                    } else if (dt > (diameter - 4) / 0.618 * 2 + (diameter - 4)
+                        && dt < ((diameter - 4) / 0.618  + (diameter - 4)) * 2) {
+                        // 消失
+                        p.position = [posStart[0] + dt - (diameter - 4) / 0.618, posStart[1] - diameter / 2 + 2];
+                        p.setShape({
+                            width: 0,
+                        });
+                        p.setStyle({
+                            opacity: 0,
+                        });
+                    }
+                    // console.log(_t, t0, dt);
+                    // t0 = _t;
+                })
+                .done(function () {
+                    // zr.remove(particle);
+                })
+                .start();
+
+            rect2Animator
+                .when(3000, {
+                    _t: 1
+                })
+                .during(function (p, _t) {
+                    // var dt = _t - t0;
+                    var dt = ((diameter - 4) / 0.618 + (diameter - 4)) * 2 * _t;
+                    if (dt < (diameter - 4) / 0.618) {
+                        // 变窄
+                        p.position = [posStart[0] + (diameter - 4)  + dt, posStart[1] - diameter / 2 + 2];
+                        p.setShape({
+                            width: (diameter - 4) / 0.618 - dt,
+                            r: [3,0,0,3],
+                        });
+                    } else if (dt >= (diameter - 4) / 0.618
+                        && dt < (diameter - 4) / 0.618 + (diameter - 4)) {
+                        // 消失
+                        p.setStyle({
+                            opacity: 0,
+                        });
+                    } else if (dt > (diameter - 4) / 0.618 + (diameter - 4)
+                    && dt <= (diameter - 4) / 0.618 * 2 + (diameter - 4)) {
+                        // 变宽
+                        p.setStyle({
+                            opacity: 1,
+                        });
+                        p.position = [posStart[0], posStart[1] - diameter / 2 + 2];
+                        p.setShape({
+                            width: dt - (diameter - 4) / 0.618 - (diameter - 4),
+                            r: [0,3,3,0],
+                        });
+                    } else if (dt > (diameter - 4) / 0.618 * 2 + (diameter - 4)
+                        && dt <= ((diameter - 4) / 0.618 + (diameter - 4)) * 2) {
+                        p.setShape({
+                            r: [3,3,3,3],
+                        });
+                        // 平移
+                        p.position = [posStart[0] + dt - (diameter - 4) / 0.618 * 2 - (diameter - 4), posStart[1] - diameter / 2 + 2];
+                    }
+                    // console.log(_t, t0, dt);
+                    // t0 = _t;
+                })
+                .done(function () {
+                    // zr.remove(particle);
+                })
+                .start();
+
+
+        }
+    }
+
+    createPipeline([100, 100], [500, 100]);
+
 </script>
 </body>
 </html>
